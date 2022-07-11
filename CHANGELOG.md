@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.6.0](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/compare/v2.5.0...v2.6.0) (2022-07-11)
+
+
+### Features
+
+* [VIC-795] added fork auto sync config ([4d15566](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/4d1556650ffbba9bf3ee53c5fb21f10869ae2105))
+* add org column to message draft table ([0db932a](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/0db932a7f839fce735c0617e152638fadaa06381))
+* add t (type) to messages in api documentation ([cccab8a](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/cccab8a6c7e0d8a3132e065db1931e4ad970a2f3))
+* avoid messages with protected types ([2210767](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/2210767a91275049ecc520c016e93d49f51ad855))
+* create patch-message endpoint ([63b97d5](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/63b97d547ea805e985e5333e30ab990e699e8f5d))
+* db migration - add t to draft messages ([a0c709f](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/a0c709f0d3dc6e4faf1d335a97c975c898fdaa66))
+* find full single message for patching ([7f4a4f1](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/7f4a4f101f08ef9ac1a37d2e943cfcbe15915c91))
+* identify user-muted message ([6710ef3](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/6710ef333f4b35b03baefa266a22e9bb2523d70f))
+* introduce e2ee message type for rocket chat messages ([4fbf015](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/4fbf0155a67952e6d4722ebb7b950cb819917b09))
+* introduce response type for sending messages ([020a06d](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/020a06dd4cd619e349be24c10f7a1ed713be0df0))
+* make alias args easily extendable ([93460e0](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/93460e05b4170d6fdf3de8ce369176f6d329a9fd))
+* message type for lost masterkey ([4128de9](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/4128de9ac0d03102097c682b65dcfb7358a2b4a9))
+* omit backend encryption of e2e messages ([68c6055](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/68c605534f0aaf60e27e0b30ae77ae8d189714bb))
+* save reassign-consultant message ([8d77143](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/8d771435a06edd550f849fc2d57f0571e19e0130))
+* send new message mail when master key lost alias is triggered ([81c364a](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/81c364a89ce3db7acaf13639362c4094fb7012a8))
+* send original message to rocket chat ([2f8e5ff](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/2f8e5fff3c57c3544aabd0bd9e8d2d3ad05bbdc5))
+* set user-muted message type ([78a207e](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/78a207e51daa513dbc1bd3e7bb7cd1877d1d1658))
+* update reassignment-consultant event ([49e17a2](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/49e17a296d90cd9df0b969baff642ac5dd6fbfc4))
+* upgrade keycloak to the latest version ([6bcd9c1](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/6bcd9c12143ea814fe392e9a56e529d5c8fe28ac))
+
+
+### Bug Fixes
+
+* consultant access to save-alias-only message ([23168a4](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/23168a43c4577bd3a832c22c8c9b0b5cf1a53552))
+* failing test ([fa14ee7](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/fa14ee79cd0c2c3170db44d74642c0a356e3c948))
+* failing tests because of protected message type ([f8b2554](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/f8b255433dc56f276880db8e492ce09673729562))
+* force safe log4j version ([a4fdbbd](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/a4fdbbd4bd2e9e8dbcf107c5d8b2d512fda6d846))
+* setup alias message without protected type ([72f6e01](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/72f6e019a26e16a5b1c99d3712e746d9009b1b99))
+* update forward message and video-call message ([529a53d](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/529a53dc06edcbf015df07c3c9552fe2504841e7))
+* update log4j ([8df71df](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/8df71df5387db9a307fca2153f3c2da11611de4f))
+* update t if draft exists ([91aced6](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/commit/91aced673fa58a0f037465137393d19597e5dd41))
+
 ## [2.5.0](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/compare/v2.4.0...v2.5.0) (2021-12-14)
 
 
