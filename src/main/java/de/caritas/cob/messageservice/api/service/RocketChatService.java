@@ -29,6 +29,7 @@ import de.caritas.cob.messageservice.api.service.dto.MessageResponse;
 import de.caritas.cob.messageservice.api.service.dto.UpdateMessage;
 import de.caritas.cob.messageservice.api.service.helper.RocketChatCredentialsHelper;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -110,8 +111,8 @@ public class RocketChatService {
    * @return MessageStreamDTO {@link MessageStreamDTO}
    */
   public MessageStreamDTO getGroupMessages(String rcToken, String rcUserId, String rcGroupId,
-      int offset, int count) {
-    var uri = buildMessageStreamUri(rcGroupId, offset, count);
+      int offset, int count, Instant since) {
+    var uri = buildMessageStreamUri(rcGroupId, offset, count, since);
     var messageStream = obtainMessageStream(rcToken, rcUserId, uri);
 
     messageStream.setMessages(Optional.ofNullable(messageStream.getMessages())
@@ -137,14 +138,14 @@ public class RocketChatService {
     }
   }
 
-  private URI buildMessageStreamUri(String rcGroupId, int offset, int count) {
+  private URI buildMessageStreamUri(String rcGroupId, int offset, int count, Instant instant) {
     try {
       return UriComponentsBuilder.fromUriString(rcGetGroupMessageUrl)
           .queryParam(rcQueryParamRoomId, rcGroupId)
           .queryParam(rcQueryParamOffset, offset)
           .queryParam(rcQueryParamCount, count)
           .queryParam(rcQueryParamSort, rcQueryParamSortValue)
-          .queryParam("query", mapper.queryOperatorNot(rcTechnicalUser))
+          .queryParam("query", mapper.queryOperatorSinceAndNot(instant, rcTechnicalUser))
           .build()
           .encode()
           .toUri();
@@ -158,7 +159,10 @@ public class RocketChatService {
 
   private MessagesDTO decryptMessageAndSetMessageType(MessagesDTO msg, String rcGroupId) {
     decryptMessage(msg, rcGroupId);
-    setMessageType(msg);
+    var alias = msg.getAlias();
+    if (nonNull(alias)) {
+      alias.setMessageType(mapper.messageTypeOf(alias));
+    }
 
     return msg;
   }
@@ -169,18 +173,6 @@ public class RocketChatService {
       msg.setOrg(encryptionService.decrypt(msg.getOrg(), rcGroupId));
     } catch (CustomCryptoException | NoMasterKeyException ex) {
       throw new InternalServerErrorException(ex, LogService::logEncryptionServiceError);
-    }
-  }
-
-  private void setMessageType(MessagesDTO msg) {
-    if (isNull(msg.getAlias()) || nonNull(msg.getAlias().getMessageType())) {
-      return;
-    }
-
-    if (nonNull(msg.getAlias().getForwardMessageDTO())) {
-      msg.getAlias().setMessageType(MessageType.FORWARD);
-    } else if (nonNull(msg.getAlias().getVideoCallMessageDTO())) {
-      msg.getAlias().setMessageType(MessageType.VIDEOCALL);
     }
   }
 

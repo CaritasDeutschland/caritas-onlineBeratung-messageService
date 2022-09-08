@@ -42,6 +42,7 @@ import de.caritas.cob.messageservice.api.model.rocket.chat.message.MessagesDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.SendMessageResponseDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.SendMessageResultDTO;
 import de.caritas.cob.messageservice.api.service.helper.RocketChatCredentialsHelper;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -130,7 +131,7 @@ public class RocketChatServiceTest {
     setField(rocketChatService,
         rocketChatService.getClass().getDeclaredField("rcGetGroupMessageUrl"), null);
 
-    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0);
+    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0, Instant.now());
   }
 
   @Test(expected = InternalServerErrorException.class)
@@ -143,7 +144,7 @@ public class RocketChatServiceTest {
     when(restTemplate.exchange(any(), any(HttpMethod.class), any(),
         ArgumentMatchers.<Class<MessageStreamDTO>>any())).thenThrow(ex);
 
-    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0);
+    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0, Instant.now());
   }
 
   @Test(expected = InternalServerErrorException.class)
@@ -164,7 +165,7 @@ public class RocketChatServiceTest {
         ArgumentMatchers.<Class<MessageStreamDTO>>any())).thenReturn(response);
     when(encryptionService.decrypt(anyString(), anyString())).thenThrow(exception);
 
-    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0);
+    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0, Instant.now());
   }
 
   @Test
@@ -179,9 +180,9 @@ public class RocketChatServiceTest {
     when(restTemplate.exchange(any(), any(HttpMethod.class), any(),
         ArgumentMatchers.<Class<MessageStreamDTO>>any())).thenReturn(entity);
 
-    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0);
+    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0, Instant.now());
 
-    assertThat(rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0),
+    assertThat(rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0, Instant.now()),
         instanceOf(MessageStreamDTO.class));
   }
 
@@ -200,7 +201,7 @@ public class RocketChatServiceTest {
     when(restTemplate.exchange(any(), any(HttpMethod.class), any(),
         ArgumentMatchers.<Class<MessageStreamDTO>>any())).thenReturn(response);
 
-    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0);
+    rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID, 0, 0, Instant.now());
 
     verify(encryptionService, times(10)).decrypt(anyString(), anyString());
   }
@@ -218,9 +219,13 @@ public class RocketChatServiceTest {
     messageStreamDTO.getMessages().get(0).getAlias().setMessageType(null);
     messageStreamDTO.getMessages().get(0).getAlias().setVideoCallMessageDTO(null);
 
-    messageStreamDTO.getMessages().forEach(messagesDTO ->
-        when(messageMapper.typedMessageOf(eq(messagesDTO)))
-            .thenReturn(messagesDTO));
+    var mapper = new MessageMapper(null, null);
+    messageStreamDTO.getMessages().forEach(messagesDTO -> {
+      when(messageMapper.typedMessageOf(eq(messagesDTO)))
+            .thenReturn(messagesDTO);
+      when(messageMapper.messageTypeOf(eq(messagesDTO.getAlias())))
+            .thenReturn(mapper.messageTypeOf(messagesDTO.getAlias()));
+    });
 
     when(restTemplate.exchange(any(), any(HttpMethod.class), any(),
         ArgumentMatchers.<Class<MessageStreamDTO>>any()))
@@ -228,7 +233,7 @@ public class RocketChatServiceTest {
             HttpStatus.OK));
 
     MessageStreamDTO result = rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID,
-        0, 0);
+        0, 0, Instant.now());
 
     assertThat(result.getMessages().get(0).getAlias().getMessageType(), is(MessageType.FORWARD));
   }
@@ -246,9 +251,13 @@ public class RocketChatServiceTest {
     messageStreamDTO.getMessages().get(0).getAlias().setMessageType(null);
     messageStreamDTO.getMessages().get(0).getAlias().setForwardMessageDTO(null);
 
-    messageStreamDTO.getMessages().forEach(messagesDTO ->
-        when(messageMapper.typedMessageOf(eq(messagesDTO)))
-            .thenReturn(messagesDTO));
+    var mapper = new MessageMapper(null, null);
+    messageStreamDTO.getMessages().forEach(messagesDTO -> {
+      when(messageMapper.typedMessageOf(eq(messagesDTO)))
+          .thenReturn(messagesDTO);
+      when(messageMapper.messageTypeOf(eq(messagesDTO.getAlias())))
+          .thenReturn(mapper.messageTypeOf(messagesDTO.getAlias()));
+    });
 
     when(restTemplate.exchange(any(), any(HttpMethod.class), any(),
         ArgumentMatchers.<Class<MessageStreamDTO>>any()))
@@ -256,7 +265,7 @@ public class RocketChatServiceTest {
             HttpStatus.OK));
 
     MessageStreamDTO result = rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID,
-        0, 0);
+        0, 0, Instant.now());
 
     assertThat(result.getMessages().get(0).getAlias().getMessageType(), is(MessageType.VIDEOCALL));
   }
@@ -275,9 +284,13 @@ public class RocketChatServiceTest {
     messageStreamDTO.getMessages().get(0).getAlias().setForwardMessageDTO(null);
     messageStreamDTO.getMessages().get(0).getAlias().setVideoCallMessageDTO(null);
 
-    messageStreamDTO.getMessages().forEach(messagesDTO ->
-        when(messageMapper.typedMessageOf(eq(messagesDTO)))
-            .thenReturn(messagesDTO));
+    var mapper = new MessageMapper(null, null);
+    messageStreamDTO.getMessages().forEach(messagesDTO -> {
+      when(messageMapper.typedMessageOf(eq(messagesDTO)))
+          .thenReturn(messagesDTO);
+      when(messageMapper.messageTypeOf(eq(messagesDTO.getAlias())))
+          .thenReturn(mapper.messageTypeOf(messagesDTO.getAlias()));
+    });
 
     when(restTemplate.exchange(any(), any(HttpMethod.class), any(),
         ArgumentMatchers.<Class<MessageStreamDTO>>any()))
@@ -285,7 +298,7 @@ public class RocketChatServiceTest {
             HttpStatus.OK));
 
     MessageStreamDTO result = rocketChatService.getGroupMessages(RC_TOKEN, RC_USER_ID, RC_GROUP_ID,
-        0, 0);
+        0, 0, Instant.now());
 
     assertThat(result.getMessages().get(0).getAlias().getMessageType(),
         is(MessageType.FURTHER_STEPS));

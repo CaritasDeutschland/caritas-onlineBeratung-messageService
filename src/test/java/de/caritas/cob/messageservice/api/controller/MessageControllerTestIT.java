@@ -66,7 +66,9 @@ import de.caritas.cob.messageservice.api.model.rocket.chat.message.UserDTO;
 import de.caritas.cob.messageservice.api.service.DraftMessageService;
 import de.caritas.cob.messageservice.api.service.EncryptionService;
 import de.caritas.cob.messageservice.api.service.LogService;
+import de.caritas.cob.messageservice.api.service.MessageMapper;
 import de.caritas.cob.messageservice.api.service.RocketChatService;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -137,6 +139,10 @@ public class MessageControllerTestIT {
   @MockBean
   @SuppressWarnings("unused")
   private RoleAuthorizationAuthorityMapper roleAuthorizationAuthorityMapper;
+
+  @MockBean
+  @SuppressWarnings("unused")
+  private MessageMapper messageMapper;
 
   @Mock
   private Logger logger;
@@ -241,7 +247,7 @@ public class MessageControllerTestIT {
     String streamJson = convertObjectToJson(stream);
 
     when(rocketChatService.getGroupMessages(anyString(), anyString(),
-        anyString(), anyInt(), anyInt())).thenReturn(stream);
+        anyString(), anyInt(), anyInt(), any(Instant.class))).thenReturn(stream);
 
     mvc.perform(get(PATH_GET_MESSAGE_STREAM).header(QUERY_PARAM_RC_TOKEN, RC_TOKEN)
             .header(QUERY_PARAM_RC_USER_ID, RC_USER_ID).param(QUERY_PARAM_OFFSET, RC_OFFSET)
@@ -250,7 +256,7 @@ public class MessageControllerTestIT {
         .andExpect(content().json(streamJson));
 
     verify(rocketChatService, atLeastOnce()).getGroupMessages(anyString(), anyString(),
-        anyString(), anyInt(), anyInt());
+        anyString(), anyInt(), anyInt(), any(Instant.class));
   }
 
   @Test
@@ -298,7 +304,7 @@ public class MessageControllerTestIT {
       throws Exception {
 
     when(rocketChatService.getGroupMessages(anyString(), anyString(),
-        anyString(), anyInt(), anyInt())).thenReturn(null);
+        anyString(), anyInt(), anyInt(), any(Instant.class))).thenReturn(null);
 
     mvc.perform(get(PATH_GET_MESSAGE_STREAM).header(QUERY_PARAM_RC_TOKEN, RC_TOKEN)
         .header(QUERY_PARAM_RC_USER_ID, RC_USER_ID).param(QUERY_PARAM_OFFSET, RC_OFFSET)
@@ -306,7 +312,7 @@ public class MessageControllerTestIT {
         .accept(MediaType.APPLICATION_JSON)).andExpect(status().isNoContent());
 
     verify(rocketChatService, atLeastOnce()).getGroupMessages(anyString(), anyString(),
-        anyString(), anyInt(), anyInt());
+        anyString(), anyInt(), anyInt(), any(Instant.class));
   }
 
   /**

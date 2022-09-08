@@ -20,12 +20,15 @@ import de.caritas.cob.messageservice.api.model.MessageType;
 import de.caritas.cob.messageservice.api.model.ReassignStatus;
 import de.caritas.cob.messageservice.api.model.VideoCallMessageDTO;
 import de.caritas.cob.messageservice.api.model.draftmessage.SavedDraftType;
+import de.caritas.cob.messageservice.api.model.rocket.chat.message.MessagesDTO;
 import de.caritas.cob.messageservice.api.service.DraftMessageService;
 import de.caritas.cob.messageservice.api.service.EncryptionService;
 import de.caritas.cob.messageservice.api.service.LogService;
+import de.caritas.cob.messageservice.api.service.MessageMapper;
 import de.caritas.cob.messageservice.api.service.RocketChatService;
 import de.caritas.cob.messageservice.generated.api.controller.MessagesApi;
 import io.swagger.annotations.Api;
+import java.time.Instant;
 import java.util.Optional;
 import javax.validation.Valid;
 import lombok.NonNull;
@@ -48,6 +51,7 @@ public class MessageController implements MessagesApi {
   private final @NonNull EncryptionService encryptionService;
   private final @NonNull Messenger messenger;
   private final @NonNull DraftMessageService draftMessageService;
+  private final @NonNull MessageMapper mapper;
 
   /**
    * Returns a list of {@link MessageStreamDTO}s from the specified Rocket.Chat group.
@@ -58,9 +62,14 @@ public class MessageController implements MessagesApi {
    * @return {@link ResponseEntity} containing {@link MessageStreamDTO}
    */
   @Override
-  public ResponseEntity<MessageStreamDTO> getMessageStream(
-      String rcToken, String rcUserId, String rcGroupId, Integer offset, Integer count) {
-    var message = rocketChatService.getGroupMessages(rcToken, rcUserId, rcGroupId, offset, count);
+  public ResponseEntity<MessageStreamDTO> getMessageStream(String rcToken, String rcUserId,
+      String rcGroupId, Integer offset, Integer count, Instant since) {
+    if (isNull(since)) {
+      since = Instant.MIN;
+    }
+    var message = rocketChatService.getGroupMessages(
+        rcToken, rcUserId, rcGroupId, offset, count, since
+    );
 
     return (message != null)
         ? new ResponseEntity<>(message, HttpStatus.OK)
@@ -257,6 +266,15 @@ public class MessageController implements MessagesApi {
           || isNull(aliasArgs.getToConsultantName()) || isNull(aliasArgs.getToAskerName());
     }
     return true;
+  }
+
+  @Override
+  public ResponseEntity<MessagesDTO> findMessage(String rcToken, String rcUserId, String msgId) {
+    return messenger
+        .findMessage(rcToken, rcUserId, msgId)
+        .map(mapper::messageDtoOf)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
   }
 
   @Override
