@@ -2,10 +2,8 @@ package de.caritas.cob.messageservice.api.controller;
 
 import static de.caritas.cob.messageservice.api.controller.MessageControllerAuthorizationTestIT.PATH_GET_MESSAGE_STREAM;
 import static de.caritas.cob.messageservice.api.controller.MessageControllerAuthorizationTestIT.PATH_POST_CREATE_ALIAS_ONLY_MESSAGE;
-import static de.caritas.cob.messageservice.api.controller.MessageControllerAuthorizationTestIT.PATH_POST_CREATE_FEEDBACK_MESSAGE;
 import static de.caritas.cob.messageservice.api.controller.MessageControllerAuthorizationTestIT.PATH_POST_CREATE_MESSAGE;
 import static de.caritas.cob.messageservice.api.controller.MessageControllerAuthorizationTestIT.PATH_POST_CREATE_VIDEO_HINT_MESSAGE;
-import static de.caritas.cob.messageservice.api.controller.MessageControllerAuthorizationTestIT.PATH_POST_FORWARD_MESSAGE;
 import static de.caritas.cob.messageservice.api.model.draftmessage.SavedDraftType.NEW_MESSAGE;
 import static de.caritas.cob.messageservice.api.model.draftmessage.SavedDraftType.OVERWRITTEN_MESSAGE;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.DONT_SEND_NOTIFICATION;
@@ -21,14 +19,12 @@ import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_ATTACHME
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_ATTACHMENT_TITLE_LINK;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_ATTACHMENT_TITLE_LINK_DOWNLOAD;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_COUNT;
-import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_FEEDBACK_GROUP_ID;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_GROUP_ID;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_OFFSET;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_TIMESTAMP;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_TOKEN;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_USER_ID;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.SEND_NOTIFICATION;
-import static de.caritas.cob.messageservice.testhelper.TestConstants.createFeedbackGroupMessage;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.createGroupMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -42,7 +38,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.powermock.reflect.Whitebox.setInternalState;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -65,9 +60,10 @@ import de.caritas.cob.messageservice.api.model.rocket.chat.message.MessagesDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.UserDTO;
 import de.caritas.cob.messageservice.api.service.DraftMessageService;
 import de.caritas.cob.messageservice.api.service.EncryptionService;
-import de.caritas.cob.messageservice.api.service.LogService;
 import de.caritas.cob.messageservice.api.service.MessageMapper;
 import de.caritas.cob.messageservice.api.service.RocketChatService;
+import de.caritas.cob.messageservice.config.security.AuthorisationService;
+import de.caritas.cob.messageservice.config.security.JwtAuthConverterProperties;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,9 +92,6 @@ public class MessageControllerTestIT {
 
   private final String VALID_MESSAGE_REQUEST_BODY_WITHOUT_NOTIFICATION =
       "{\"message\": \"Lorem ipsum\", \"sendNotification\": " + DONT_SEND_NOTIFICATION + "}";
-  private final String VALID_FORWARD_MESSAGE_REQUEST_BODY = "{\"message\": \"" + MESSAGE + "\","
-      + "\"timestamp\": \"2018-11-15T09:33:00.057Z\", \"username\": \"asker23\",\r\n"
-      + "\"rcUserId\": \"ag89h3tjkerg94t\"}";
   private final String INVALID_MESSAGE_REQUEST_BODY = "{\"in\": \"valid\"}";
   private final FileDTO FILE_DTO =
       new FileDTO().id(RC_ATTACHMENT_ID).name(RC_ATTACHMENT_TITLE).type(RC_ATTACHMENT_FILE_TYPE);
@@ -118,7 +111,6 @@ public class MessageControllerTestIT {
   private final String QUERY_PARAM_RC_USER_ID = "rcUserId";
   private final String QUERY_PARAM_RC_GROUP_ID = "rcGroupId";
   private final String QUERY_PARAM_RC_TOKEN = "rcToken";
-  private final String QUERY_PARAM_RC_FEEDBACK_GROUP_ID = "rcFeedbackGroupId";
   private final String MASTER_KEY_1 = "key1";
 
   @Autowired
@@ -144,13 +136,13 @@ public class MessageControllerTestIT {
   @SuppressWarnings("unused")
   private MessageMapper messageMapper;
 
-  @Mock
-  private Logger logger;
+  @MockBean
+  private AuthorisationService authorisationService;
 
-  @Before
-  public void setup() {
-    setInternalState(LogService.class, "LOGGER", logger);
-  }
+  @MockBean
+  private JwtAuthConverterProperties jwtAuthConverterProperties;
+
+
 
   /**
    * 400 - Bad Request tests
@@ -193,46 +185,6 @@ public class MessageControllerTestIT {
         .andExpect(status().isBadRequest());
   }
 
-  @Test
-  public void forwardMessage_Should_ReturnBadRequest_WhenProvidedWithInvalidRequestBody()
-      throws Exception {
-
-    mvc.perform(post(PATH_POST_FORWARD_MESSAGE).header(QUERY_PARAM_RC_TOKEN, RC_TOKEN)
-        .header(QUERY_PARAM_RC_USER_ID, RC_USER_ID).header(QUERY_PARAM_RC_GROUP_ID, RC_GROUP_ID)
-        .content(INVALID_MESSAGE_REQUEST_BODY).contentType(MediaType.APPLICATION_JSON)
-        .accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
-  }
-
-  @Test
-  public void forwardMessage_Should_ReturnBadRequest_WhenHeaderValuesAreMissing() throws Exception {
-
-    mvc.perform(post(PATH_POST_FORWARD_MESSAGE).content(VALID_FORWARD_MESSAGE_REQUEST_BODY)
-            .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isBadRequest());
-  }
-
-  @Test
-  public void createFeedbackMessage_Should_ReturnBadRequest_WhenProvidedWithInvalidRequestBody()
-      throws Exception {
-
-    mvc.perform(post(PATH_POST_CREATE_FEEDBACK_MESSAGE).header(QUERY_PARAM_RC_TOKEN, RC_TOKEN)
-        .header(QUERY_PARAM_RC_USER_ID, RC_USER_ID)
-        .header(QUERY_PARAM_RC_FEEDBACK_GROUP_ID, RC_FEEDBACK_GROUP_ID)
-        .content(INVALID_MESSAGE_REQUEST_BODY).contentType(MediaType.APPLICATION_JSON)
-        .accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
-  }
-
-  @Test
-  public void createFeedbackMessage_Should_ReturnBadRequest_WhenHeaderValuesAreMissing()
-      throws Exception {
-
-    mvc.perform(
-            post(PATH_POST_CREATE_FEEDBACK_MESSAGE)
-                .content(VALID_MESSAGE_REQUEST_BODY_WITHOUT_NOTIFICATION)
-                .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isBadRequest());
-  }
-
   /**
    * 200 - OK & 201 CREATED tests
    */
@@ -270,30 +222,6 @@ public class MessageControllerTestIT {
         .andExpect(status().isCreated());
 
     verify(messenger, atLeastOnce()).postGroupMessage(any(ChatMessage.class));
-  }
-
-  @Test
-  public void forwardMessage_Should_ReturnCreated_WhenProvidedWithValidRequestValuesAndSuccessfulPostGroupMessageFacadeCall()
-      throws Exception {
-
-    mvc.perform(post(PATH_POST_FORWARD_MESSAGE).header(QUERY_PARAM_RC_TOKEN, RC_TOKEN)
-        .header(QUERY_PARAM_RC_USER_ID, RC_USER_ID).header(QUERY_PARAM_RC_GROUP_ID, RC_GROUP_ID)
-        .content(VALID_FORWARD_MESSAGE_REQUEST_BODY).contentType(MediaType.APPLICATION_JSON)
-        .accept(MediaType.APPLICATION_JSON)).andExpect(status().isCreated());
-  }
-
-  @Test
-  public void createFeedbackMessage_Should_ReturnCreated_WhenProvidedWithValidRequestValuesAndSuccessfulPostGroupMessageFacadeCall()
-      throws Exception {
-
-    mvc.perform(post(PATH_POST_CREATE_FEEDBACK_MESSAGE).header(QUERY_PARAM_RC_TOKEN, RC_TOKEN)
-            .header(QUERY_PARAM_RC_USER_ID, RC_USER_ID)
-            .header(QUERY_PARAM_RC_FEEDBACK_GROUP_ID, RC_FEEDBACK_GROUP_ID)
-            .content(VALID_MESSAGE_REQUEST_BODY_WITHOUT_NOTIFICATION)
-            .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isCreated());
-
-    verify(messenger, atLeastOnce()).postFeedbackGroupMessage(any(ChatMessage.class));
   }
 
   /**
@@ -334,40 +262,6 @@ public class MessageControllerTestIT {
     verify(messenger, atLeastOnce()).postGroupMessage(any(ChatMessage.class));
   }
 
-  @Test
-  public void forwardMessage_Should_ReturnInternalServerError_WhenProvidedWithValidRequestValuesAndPostGroupMessageFacadeResponseIsEmpty()
-      throws Exception {
-
-    doThrow(new InternalServerErrorException())
-        .when(messenger).postFeedbackGroupMessage(any(ChatMessage.class));
-
-    mvc.perform(post(PATH_POST_FORWARD_MESSAGE).header(QUERY_PARAM_RC_TOKEN, RC_TOKEN)
-        .header(QUERY_PARAM_RC_USER_ID, RC_USER_ID).header(QUERY_PARAM_RC_GROUP_ID, RC_GROUP_ID)
-        .content(VALID_FORWARD_MESSAGE_REQUEST_BODY).contentType(MediaType.APPLICATION_JSON)
-        .accept(MediaType.APPLICATION_JSON)).andExpect(status().isInternalServerError());
-
-    verify(messenger, atLeastOnce()).postFeedbackGroupMessage(
-        any(ChatMessage.class));
-  }
-
-  @Test
-  public void createFeedbackMessage_Should_ReturnInternalServerError_WhenProvidedWithValidRequestValuesAndPostGroupMessageFacadeResponseIsEmpty()
-      throws Exception {
-
-    doThrow(new InternalServerErrorException()).when(messenger)
-        .postFeedbackGroupMessage(createFeedbackGroupMessage());
-
-    mvc.perform(post(PATH_POST_CREATE_FEEDBACK_MESSAGE).header(QUERY_PARAM_RC_TOKEN, RC_TOKEN)
-            .header(QUERY_PARAM_RC_USER_ID, RC_USER_ID)
-            .header(QUERY_PARAM_RC_FEEDBACK_GROUP_ID, RC_FEEDBACK_GROUP_ID)
-            .content(VALID_MESSAGE_REQUEST_BODY_WITHOUT_NOTIFICATION)
-            .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isInternalServerError());
-
-    verify(messenger, atLeastOnce()).postFeedbackGroupMessage(
-        any(ChatMessage.class));
-  }
-
   /**
    * 202 - Accepted Test
    */
@@ -404,7 +298,7 @@ public class MessageControllerTestIT {
   }
 
   @Test
-  public void createMessage_Should_LogInternalServerError_When_InternalServerErrorIsThrown()
+  public void createMessage_Should_ReturnInternalServerError_When_InternalServerErrorIsThrown()
       throws Exception {
 
     doThrow(new InternalServerErrorException()).when(messenger)
@@ -415,8 +309,6 @@ public class MessageControllerTestIT {
             .content(VALID_MESSAGE_REQUEST_BODY_WITHOUT_NOTIFICATION)
             .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isInternalServerError());
-
-    verify(logger, atLeastOnce()).error(eq("{}{}"), eq("Internal Server Error: "), anyString());
   }
 
   @Test
@@ -595,24 +487,4 @@ public class MessageControllerTestIT {
 
     verifyNoInteractions(this.messenger);
   }
-
-  @Test
-  public void saveAliasOnlyMessage_Should_ReturnCreated_When_paramsAreValid()
-      throws Exception {
-    var aliasOnlyMessageDTO = easyRandom.nextObject(AliasOnlyMessageDTO.class);
-    aliasOnlyMessageDTO.setMessageType(MessageType.FORWARD);
-    aliasOnlyMessageDTO.setArgs(null);
-
-    mvc.perform(
-            post(PATH_POST_CREATE_ALIAS_ONLY_MESSAGE)
-                .header("rcGroupId", RC_GROUP_ID)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(new ObjectMapper().writeValueAsString(aliasOnlyMessageDTO))
-                .accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isCreated());
-
-    verify(this.messenger, times(1))
-        .createEvent(RC_GROUP_ID, MessageType.FORWARD, null);
-  }
-
 }

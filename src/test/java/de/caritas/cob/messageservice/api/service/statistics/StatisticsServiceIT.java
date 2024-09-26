@@ -1,5 +1,6 @@
 package de.caritas.cob.messageservice.api.service.statistics;
 
+import static de.caritas.cob.messageservice.testhelper.TestConstants.ADVICESEEKER_ID;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.CONSULTANT_ID;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_GROUP_ID;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -46,7 +47,7 @@ public class StatisticsServiceIT {
       throws IOException {
 
     CreateMessageStatisticsEvent createMessageStatisticsEvent =
-        new CreateMessageStatisticsEvent(CONSULTANT_ID, UserRole.CONSULTANT, RC_GROUP_ID, false);
+        new CreateMessageStatisticsEvent(CONSULTANT_ID, UserRole.CONSULTANT, RC_GROUP_ID, false, ADVICESEEKER_ID, 1L);
 
     statisticsService.fireEvent(createMessageStatisticsEvent);
     Message message =
@@ -64,6 +65,12 @@ public class StatisticsServiceIT {
             + "  \"userRole\":\""
             + UserRole.CONSULTANT
             + "\","
+            + "\"receiverId\":\""
+            + ADVICESEEKER_ID
+            + "\","
+            + "\"tenantId\":"
+            + 1L
+            + ","
             + "  \"timestamp\":\""
             + CustomOffsetDateTime.nowInUtc()
             + "\","

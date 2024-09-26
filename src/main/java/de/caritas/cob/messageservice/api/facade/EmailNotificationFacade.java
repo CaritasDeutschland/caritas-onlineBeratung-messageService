@@ -1,7 +1,6 @@
 package de.caritas.cob.messageservice.api.facade;
 
 import de.caritas.cob.messageservice.api.model.AliasArgs;
-import de.caritas.cob.messageservice.api.model.ConsultantReassignment;
 import de.caritas.cob.messageservice.api.model.ReassignStatus;
 import de.caritas.cob.messageservice.api.service.helper.ServiceHelper;
 import de.caritas.cob.messageservice.api.tenant.TenantContext;
@@ -54,25 +53,10 @@ public class EmailNotificationFacade {
     headers.forEach((key, value) -> apiClient.addDefaultHeader(key, value.iterator().next()));
   }
 
-  /**
-   * Sends a new feedback message notification via the UserService (user data needed for sending the
-   * mail will be read by the UserService, which in turn calls the MessageService).
-   *
-   * @param rcGroupId - Rocket.Chat group id
-   */
-  @Async
-  public void sendEmailAboutNewFeedbackMessage(String rcGroupId, Optional<Long> tenantId,
-      String accessToken) {
-
-    var userControllerApi = clientFactory.userControllerApi();
-    addDefaultHeaders(userControllerApi.getApiClient(), accessToken, tenantId);
-    userControllerApi
-        .sendNewFeedbackMessageNotification(new NewMessageNotificationDTO().rcGroupId(rcGroupId));
-  }
-
   @Async
   public void sendEmailAboutReassignRequest(String rcGroupId, AliasArgs aliasArgs,
       Optional<Long> tenantId, String accessToken) {
+
     var reassignmentNotification = new ReassignmentNotificationDTO()
         .rcGroupId(rcGroupId)
         .toConsultantId(aliasArgs.getToConsultantId())
@@ -85,7 +69,7 @@ public class EmailNotificationFacade {
 
   @Async
   public void sendEmailAboutReassignDecision(String roomId,
-      ConsultantReassignment consultantReassignment, Optional<Long> tenantId, String accessToken) {
+      AliasArgs consultantReassignment, Optional<Long> tenantId, String accessToken) {
     var reassignmentNotification = new ReassignmentNotificationDTO()
         .rcGroupId(roomId)
         .toConsultantId(consultantReassignment.getToConsultantId())

@@ -8,7 +8,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.powermock.reflect.Whitebox.setInternalState;
 
 import de.caritas.cob.messageservice.api.service.helper.ServiceHelper;
 import de.caritas.cob.messageservice.config.apiclient.ApiControllerFactory;
@@ -21,7 +20,6 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.slf4j.Logger;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestClientException;
 
@@ -33,11 +31,9 @@ public class LiveEventNotificationServiceTest {
   @Mock private LiveproxyControllerApi liveproxyControllerApi;
   @Mock private ServiceHelper serviceHelper;
   @Mock private ApiControllerFactory clientFactory;
-  @Mock private Logger logger;
 
   @Before
   public void setup() {
-    setInternalState(LogService.class, "LOGGER", logger);
     when(clientFactory.liveproxyControllerApi()).thenReturn(liveproxyControllerApi);
   }
 
@@ -84,7 +80,5 @@ public class LiveEventNotificationServiceTest {
         .thenReturn(new HttpHeaders());
 
     this.liveEventNotificationService.sendLiveEvent("valid", "", Optional.empty());
-
-    verify(this.logger, times(1)).error(anyString(), anyString(), anyString());
   }
 }

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.caritas.cob.messageservice.api.helper.json.OffsetDateTimeToStringSerializer;
 import de.caritas.cob.messageservice.api.model.AliasMessageDTO;
-import de.caritas.cob.messageservice.api.model.ForwardMessageDTO;
 import de.caritas.cob.messageservice.api.service.LogService;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -32,24 +31,6 @@ public class JSONHelper {
     } catch (JsonProcessingException jsonEx) {
       LogService.logInternalServerError(
           "Could not convert AliasMessageDTO to alias String", jsonEx);
-      return Optional.empty();
-    }
-  }
-
-  /**
-   * Maps a given String to a {@link ForwardMessageDTO}.
-   *
-   * @param alias String
-   * @return Optional of {@link ForwardMessageDTO}
-   */
-  public static Optional<ForwardMessageDTO> convertStringToForwardMessageDTO(String alias) {
-    try {
-      return Optional.ofNullable(
-          new ObjectMapper()
-              .readValue(UrlEncodingDecodingUtils.urlDecodeString(alias), ForwardMessageDTO.class));
-    } catch (IOException jsonParseEx) {
-      // This is not an error any more due to restructuring of the alias object. This is not a
-      // real error, but necessary due to legacy code
       return Optional.empty();
     }
   }

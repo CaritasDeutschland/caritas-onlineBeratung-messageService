@@ -8,10 +8,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import de.caritas.cob.messageservice.api.helper.JSONHelper;
 import de.caritas.cob.messageservice.api.helper.UserHelper;
 import de.caritas.cob.messageservice.api.model.AliasMessageDTO;
-import de.caritas.cob.messageservice.api.model.ForwardMessageDTO;
 import de.caritas.cob.messageservice.api.model.VideoCallMessageDTO;
 import java.io.IOException;
-import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -30,11 +28,8 @@ public class AliasJsonDeserializer extends JsonDeserializer<AliasMessageDTO> {
   }
 
   /**
-   * Deserializes the Rocket.Chat custom alias object. If the structure of the alias object is the
-   * representation only of the old {@link ForwardMessageDTO}, then the deserialization transforms
-   * the old {@link ForwardMessageDTO} into the current used {@link AliasMessageDTO} containing the
-   * {@link ForwardMessageDTO}. Otherwise the whole new {@link AliasMessageDTO} containing a {@link
-   * ForwardMessageDTO} or a {@link VideoCallMessageDTO} will be transformed.
+   * Deserializes the Rocket.Chat custom alias object. The whole new {@link AliasMessageDTO} containing a
+   * {@link VideoCallMessageDTO} will be transformed.
    *
    * @param jsonParser the json parser object containing the source object as a string
    * @param context    the current context
@@ -52,35 +47,15 @@ public class AliasJsonDeserializer extends JsonDeserializer<AliasMessageDTO> {
       return null;
     }
 
-    Optional<ForwardMessageDTO> forwardMessageDTO =
-        JSONHelper.convertStringToForwardMessageDTO(aliasValue);
-
-    if (forwardMessageDTO.isPresent()) {
-      return buildAliasMessageDTOByOldForwardDTO(forwardMessageDTO.get());
-    }
-
     return buildAliasMessageDTOWithPossibleVideoCallMessageDTO(aliasValue);
-  }
-
-  private AliasMessageDTO buildAliasMessageDTOByOldForwardDTO(ForwardMessageDTO forwardMessageDTO) {
-    forwardMessageDTO.setUsername(userHelper.decodeUsername(forwardMessageDTO.getUsername()));
-    return new AliasMessageDTO().forwardMessageDTO(forwardMessageDTO);
   }
 
   private AliasMessageDTO buildAliasMessageDTOWithPossibleVideoCallMessageDTO(String aliasValue) {
     AliasMessageDTO alias = JSONHelper.convertStringToAliasMessageDTO(aliasValue).orElse(null);
     if (nonNull(alias)) {
-      decodeUsernameOfForwardMessageDTOIfNonNull(alias);
       decodeUsernameOfVideoCallMessageDTOIfNonNull(alias);
     }
     return alias;
-  }
-
-  private void decodeUsernameOfForwardMessageDTOIfNonNull(AliasMessageDTO alias) {
-    if (nonNull(alias.getForwardMessageDTO())) {
-      alias.getForwardMessageDTO()
-          .setUsername(userHelper.decodeUsername(alias.getForwardMessageDTO().getUsername()));
-    }
   }
 
   private void decodeUsernameOfVideoCallMessageDTOIfNonNull(AliasMessageDTO alias) {

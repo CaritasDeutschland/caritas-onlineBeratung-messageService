@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import de.caritas.cob.messageservice.api.model.AliasArgs;
-import de.caritas.cob.messageservice.api.model.ConsultantReassignment;
 import de.caritas.cob.messageservice.userservice.generated.ApiClient;
 import de.caritas.cob.messageservice.userservice.generated.web.UserControllerApi;
 import java.lang.management.ManagementFactory;
@@ -52,20 +51,6 @@ class EmailNotificationFacadeAsyncIT {
   }
 
   @Test
-  void sendEmailAboutNewFeedbackMessageShouldRunInAnotherThread() {
-    when(userControllerApi.getApiClient()).thenReturn(apiClient);
-    var threadCount = ManagementFactory.getThreadMXBean().getThreadCount();
-
-    underTest.sendEmailAboutNewFeedbackMessage(
-        RandomStringUtils.randomAlphanumeric(16),
-        Optional.of(easyRandom.nextLong()),
-        null
-    );
-
-    assertEquals(threadCount + 1, ManagementFactory.getThreadMXBean().getThreadCount());
-  }
-
-  @Test
   void sendEmailAboutReassignRequestShouldRunInAnotherThread() {
     when(userControllerApi.getApiClient()).thenReturn(apiClient);
     var threadCount = ManagementFactory.getThreadMXBean().getThreadCount();
@@ -87,7 +72,7 @@ class EmailNotificationFacadeAsyncIT {
 
     underTest.sendEmailAboutReassignDecision(
         RandomStringUtils.randomAlphanumeric(16),
-        easyRandom.nextObject(ConsultantReassignment.class),
+        easyRandom.nextObject(AliasArgs.class),
         Optional.of(easyRandom.nextLong()),
         null
     );

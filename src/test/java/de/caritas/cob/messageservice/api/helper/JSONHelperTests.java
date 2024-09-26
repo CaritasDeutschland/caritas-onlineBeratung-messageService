@@ -76,6 +76,10 @@ public class JSONHelperTests {
             + EventType.CREATE_MESSAGE
             + "\","
             + "  \"hasAttachment\": false"
+            + ","
+            + "  \"receiverId\": null"
+            + ","
+            + "  \"tenantId\": null"
             + "}";
 
     assertThat(result.get(), jsonEquals(expectedJson).whenIgnoringPaths("timestamp"));

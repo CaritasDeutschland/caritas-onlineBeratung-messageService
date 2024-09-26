@@ -1,5 +1,7 @@
 package de.caritas.cob.messageservice.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.caritas.cob.messageservice.api.model.AliasArgs;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;

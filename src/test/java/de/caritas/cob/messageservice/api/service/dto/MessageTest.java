@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.caritas.cob.messageservice.api.model.ConsultantReassignment;
+import de.caritas.cob.messageservice.api.model.AliasArgs;
 import de.caritas.cob.messageservice.api.model.MessageType;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -91,7 +91,6 @@ class MessageTest {
 
     assertTrue(message.isA(MessageType.FURTHER_STEPS));
     assertFalse(message.isA(MessageType.USER_MUTED));
-    assertFalse(message.isA(MessageType.FORWARD));
     assertFalse(message.isA(MessageType.REASSIGN_CONSULTANT));
   }
 
@@ -103,7 +102,6 @@ class MessageTest {
 
     assertFalse(message.isA(MessageType.FURTHER_STEPS));
     assertFalse(message.isA(MessageType.USER_MUTED));
-    assertFalse(message.isA(MessageType.FORWARD));
     assertFalse(message.isA(MessageType.REASSIGN_CONSULTANT));
   }
 
@@ -116,7 +114,6 @@ class MessageTest {
 
     assertFalse(message.isA(MessageType.FURTHER_STEPS));
     assertFalse(message.isA(MessageType.USER_MUTED));
-    assertFalse(message.isA(MessageType.FORWARD));
     assertFalse(message.isA(MessageType.REASSIGN_CONSULTANT));
   }
 
@@ -127,7 +124,6 @@ class MessageTest {
 
     assertFalse(message.isA(MessageType.FURTHER_STEPS));
     assertFalse(message.isA(MessageType.USER_MUTED));
-    assertFalse(message.isA(MessageType.FORWARD));
     assertFalse(message.isA(MessageType.REASSIGN_CONSULTANT));
   }
 
@@ -136,7 +132,7 @@ class MessageTest {
     var stored = "{&quot;toConsultantId&quot;:&quot;8a81117b-d875-4ba4-8696-d62c3a2dae91&quot;,&quot;status&quot;:&quot;REQUESTED&quot;}";
     stored = stored.replace("&quot;", "\"");
 
-    var result = new ObjectMapper().readValue(stored, ConsultantReassignment.class);
+    var result = new ObjectMapper().readValue(stored, AliasArgs.class);
 
     assertThat(result.getStatus(), Matchers.is(REQUESTED));
   }

@@ -8,7 +8,7 @@ import de.caritas.cob.messageservice.api.helper.AuthenticatedUser;
 import de.caritas.cob.messageservice.api.service.TenantHeaderSupplier;
 import java.util.Enumeration;
 import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,10 +17,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.powermock.reflect.Whitebox;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -52,8 +52,8 @@ public class ServiceHelperTest {
   @Before
   public void setup() throws NoSuchFieldException, SecurityException {
     givenRequestContextIsSet();
-    Whitebox.setInternalState(serviceHelper, FIELD_NAME_CSRF_TOKEN_HEADER_PROPERTY, CSRF_TOKEN_HEADER_VALUE);
-    Whitebox.setInternalState(serviceHelper, FIELD_NAME_CSRF_TOKEN_COOKIE_PROPERTY, CSRF_TOKEN_COOKIE_VALUE);
+    ReflectionTestUtils.setField(serviceHelper, FIELD_NAME_CSRF_TOKEN_HEADER_PROPERTY, CSRF_TOKEN_HEADER_VALUE);
+    ReflectionTestUtils.setField(serviceHelper, FIELD_NAME_CSRF_TOKEN_COOKIE_PROPERTY, CSRF_TOKEN_COOKIE_VALUE);
   }
 
   private void givenRequestContextIsSet() {

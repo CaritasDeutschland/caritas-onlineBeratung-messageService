@@ -24,7 +24,7 @@ import de.caritas.cob.messageservice.api.model.ReassignStatus;
 import de.caritas.cob.messageservice.api.model.VideoCallMessageDTO;
 import de.caritas.cob.messageservice.api.service.EncryptionService;
 import de.caritas.cob.messageservice.api.service.RocketChatService;
-import javax.servlet.http.Cookie;
+import jakarta.servlet.http.Cookie;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jeasy.random.EasyRandom;
 import org.junit.Before;
@@ -48,11 +48,9 @@ public class MessageControllerAuthorizationTestIT {
 
   protected final static String PATH_GET_MESSAGE_STREAM = "/messages";
   protected final static String PATH_POST_CREATE_MESSAGE = "/messages/new";
-  protected final static String PATH_POST_CREATE_FEEDBACK_MESSAGE = "/messages/feedback/new";
   protected final static String PATH_POST_CREATE_VIDEO_HINT_MESSAGE = "/messages/videohint/new";
   protected final static String PATH_POST_CREATE_ALIAS_ONLY_MESSAGE = "/messages/aliasonly/new";
   protected final static String PATH_POST_UPDATE_KEY = "/messages/key";
-  protected final static String PATH_POST_FORWARD_MESSAGE = "/messages/forward";
   private final static String CSRF_COOKIE = "CSRF-TOKEN";
   private final static String CSRF_HEADER = "X-CSRF-TOKEN";
   private final static String CSRF_VALUE = "test";
@@ -186,83 +184,7 @@ public class MessageControllerAuthorizationTestIT {
 
     verifyNoMoreInteractions(encryptionService);
   }
-
-  @Test
-  public void forwardMessage_Should_ReturnUnauthorizedAndCallNoMethods_WhenNoKeycloakAuthorization()
-      throws Exception {
-
-    mvc.perform(post(PATH_POST_FORWARD_MESSAGE).cookie(csrfCookie).header(CSRF_HEADER, CSRF_VALUE)
-            .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isUnauthorized());
-
-    verifyNoMoreInteractions(rocketChatService);
-    verifyNoMoreInteractions(messenger);
-  }
-
-  @Test
-  @WithMockUser
-  public void forwardMessage_Should_ReturnForbiddenAndCallNoMethods_WhenNoUserFeedbackAuthority()
-      throws Exception {
-
-    mvc.perform(post(PATH_POST_FORWARD_MESSAGE).cookie(csrfCookie).header(CSRF_HEADER, CSRF_VALUE)
-            .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isForbidden());
-
-    verifyNoMoreInteractions(rocketChatService);
-    verifyNoMoreInteractions(messenger);
-  }
-
-  @Test
-  @WithMockUser(authorities = {AuthorityValue.USE_FEEDBACK})
-  public void forwardMessage_Should_ReturnForbiddenAndCallNoMethods_WhenNoCsrfTokens()
-      throws Exception {
-
-    mvc.perform(post(PATH_POST_FORWARD_MESSAGE).contentType(MediaType.APPLICATION_JSON)
-        .accept(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden());
-
-    verifyNoMoreInteractions(rocketChatService);
-    verifyNoMoreInteractions(messenger);
-  }
-
-  @Test
-  public void createFeedbackMessage_Should_ReturnUnauthorizedAndCallNoMethods_WhenNoKeycloakAuthorization()
-      throws Exception {
-
-    mvc.perform(
-            post(PATH_POST_CREATE_FEEDBACK_MESSAGE).cookie(csrfCookie).header(CSRF_HEADER, CSRF_VALUE)
-                .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isUnauthorized());
-
-    verifyNoMoreInteractions(rocketChatService);
-    verifyNoMoreInteractions(messenger);
-  }
-
-  @Test
-  @WithMockUser
-  public void createFeedbackMessage_Should_ReturnForbiddenAndCallNoMethods_WhenNoUserFeedbackAuthority()
-      throws Exception {
-
-    mvc.perform(
-            post(PATH_POST_CREATE_FEEDBACK_MESSAGE).cookie(csrfCookie).header(CSRF_HEADER, CSRF_VALUE)
-                .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isForbidden());
-
-    verifyNoMoreInteractions(rocketChatService);
-    verifyNoMoreInteractions(messenger);
-  }
-
-  @Test
-  @WithMockUser(authorities = {AuthorityValue.USE_FEEDBACK})
-  public void createFeedbackMessage_Should_ReturnForbiddenAndCallNoMethods_WhenNoCsrfTokens()
-      throws Exception {
-
-    mvc.perform(post(PATH_POST_CREATE_FEEDBACK_MESSAGE).contentType(MediaType.APPLICATION_JSON)
-        .accept(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden());
-
-    verifyNoMoreInteractions(rocketChatService);
-    verifyNoMoreInteractions(messenger);
-  }
-
+  
   @Test
   public void createVideoHintMessage_Should_ReturnUnauthorizedAndCallNoMethods_When_NoKeycloakAuthorization()
       throws Exception {
@@ -534,8 +456,7 @@ public class MessageControllerAuthorizationTestIT {
   @WithMockUser(authorities = {
       AuthorityValue.ANONYMOUS_DEFAULT,
       AuthorityValue.CONSULTANT_DEFAULT,
-      AuthorityValue.TECHNICAL_DEFAULT,
-      AuthorityValue.USE_FEEDBACK
+      AuthorityValue.TECHNICAL_DEFAULT
   })
   public void patchMessageShouldReturnForbiddenAndCallNoMethodsWhenNoUserDefaultAuthority()
       throws Exception {
@@ -584,8 +505,7 @@ public class MessageControllerAuthorizationTestIT {
 
   @Test
   @WithMockUser(authorities = {
-      AuthorityValue.TECHNICAL_DEFAULT,
-      AuthorityValue.USE_FEEDBACK
+      AuthorityValue.TECHNICAL_DEFAULT
   })
   public void deleteMessageShouldReturnForbiddenAndCallNoMethodsWhenNoUserDefaultAuthority()
       throws Exception {
@@ -628,8 +548,7 @@ public class MessageControllerAuthorizationTestIT {
 
   @Test
   @WithMockUser(authorities = {
-      AuthorityValue.TECHNICAL_DEFAULT,
-      AuthorityValue.USE_FEEDBACK
+      AuthorityValue.TECHNICAL_DEFAULT
   })
   public void findMessageShouldReturnForbiddenAndCallNoMethodsWhenNoSupportedAuthority()
       throws Exception {

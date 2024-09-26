@@ -12,7 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import de.caritas.cob.messageservice.api.exception.CustomCryptoException;
-import org.powermock.reflect.Whitebox;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @RunWith(MockitoJUnitRunner.class)
 public class EncryptionServiceTest {
@@ -34,7 +34,7 @@ public class EncryptionServiceTest {
 
   @Before
   public void setup() throws NoSuchFieldException {
-    Whitebox.setInternalState(encryptionService, "fragment_applicationKey", KEY_APPLICATION);
+    ReflectionTestUtils.setField(encryptionService, "fragment_applicationKey", KEY_APPLICATION);
 
 
     encryptionService.updateMasterKey(KEY_MASTER);

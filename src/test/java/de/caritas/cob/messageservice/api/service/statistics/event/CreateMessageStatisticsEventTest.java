@@ -1,5 +1,6 @@
 package de.caritas.cob.messageservice.api.service.statistics.event;
 
+import static de.caritas.cob.messageservice.testhelper.TestConstants.ADVICESEEKER_ID;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_GROUP_ID;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.CONSULTANT_ID;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -18,12 +19,14 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class CreateMessageStatisticsEventTest {
 
+  private static final long TENANT_ID = 1L;
   private CreateMessageStatisticsEvent createMessageStatisticsEvent;
 
   @Before
   public void setup() throws NoSuchFieldException, IllegalAccessException {
     createMessageStatisticsEvent =
-        new CreateMessageStatisticsEvent(CONSULTANT_ID, UserRole.CONSULTANT, RC_GROUP_ID, false);
+        new CreateMessageStatisticsEvent(CONSULTANT_ID, UserRole.CONSULTANT, RC_GROUP_ID, false, ADVICESEEKER_ID,
+            TENANT_ID);
   }
 
   @Test
@@ -37,9 +40,11 @@ public class CreateMessageStatisticsEventTest {
 
     String expectedJson = "{"
         + "  \"rcGroupId\":\"" + RC_GROUP_ID + "\","
+        + "  \"receiverId\":\"" + ADVICESEEKER_ID + "\","
         + "  \"userId\":\"" + CONSULTANT_ID + "\","
         + "  \"userRole\":\"" + UserRole.CONSULTANT + "\","
         + "  \"hasAttachment\": false,"
+        + "  \"tenantId\":" + TENANT_ID + ","
         + "  \"timestamp\":\"" + CustomOffsetDateTime.nowInUtc() + "\","
         + "  \"eventType\":\"" + EventType.CREATE_MESSAGE + "\""
         + "}";
