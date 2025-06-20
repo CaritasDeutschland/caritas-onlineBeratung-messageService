@@ -7,8 +7,9 @@ import de.caritas.cob.messageservice.api.exception.KeycloakException;
 import de.caritas.cob.messageservice.api.exception.NoMasterKeyException;
 import de.caritas.cob.messageservice.api.exception.RocketChatBadRequestException;
 import de.caritas.cob.messageservice.api.service.LogService;
+import io.sentry.Sentry;
 import java.net.UnknownHostException;
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 import lombok.NoArgsConstructor;
 import org.hibernate.service.spi.ServiceException;
 import org.springframework.core.Ordered;
@@ -46,46 +47,8 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   public ResponseEntity<Object> handleBadRequest(
       final RuntimeException ex, final WebRequest request) {
     LogService.logWarning(ex);
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(null, null, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
-  }
-
-  /**
-   * Incoming request body could not be deserialized.
-   *
-   * @param ex the exception to be handled
-   * @param headers http headers
-   * @param status http status
-   * @param request web request
-   */
-  @Override
-  protected ResponseEntity<Object> handleHttpMessageNotReadable(
-      final HttpMessageNotReadableException ex,
-      final HttpHeaders headers,
-      final HttpStatus status,
-      final WebRequest request) {
-    LogService.logWarning(status, ex);
-
-    return handleExceptionInternal(null, null, headers, status, request);
-  }
-
-  /**
-   * @Valid on object fails validation.
-   *
-   * @param ex the exception to be handled
-   * @param headers http headers
-   * @param status http status
-   * @param request web request
-   */
-  @Override
-  protected ResponseEntity<Object> handleMethodArgumentNotValid(
-      final MethodArgumentNotValidException ex,
-      final HttpHeaders headers,
-      final HttpStatus status,
-      final WebRequest request) {
-    LogService.logWarning(status, ex);
-
-    return handleExceptionInternal(null, null, headers, status, request);
   }
 
   /**
@@ -98,7 +61,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   protected ResponseEntity<Object> handleConflict(
       final RuntimeException ex, final WebRequest request) {
     LogService.logWarning(HttpStatus.CONFLICT, ex);
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(null, null, new HttpHeaders(), HttpStatus.CONFLICT, request);
   }
 
@@ -111,8 +74,8 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   @ExceptionHandler({HttpClientErrorException.class})
   protected ResponseEntity<Object> handleHttpClientException(
       final HttpClientErrorException ex, final WebRequest request) {
-    LogService.logWarning(ex.getStatusCode(), ex);
-
+    LogService.logWarning((HttpStatus) ex.getStatusCode(), ex);
+    Sentry.captureException(ex);
     return handleExceptionInternal(null, null, new HttpHeaders(), ex.getStatusCode(), request);
   }
 
@@ -128,7 +91,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   public ResponseEntity<Object> handleInternal(
       final RuntimeException ex, final WebRequest request) {
     LogService.logInternalServerError(ex);
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(
         null, null, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
   }
@@ -143,7 +106,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   public ResponseEntity<Object> handleInternal(
       final InternalServerErrorException ex, final WebRequest request) {
     ex.executeLogging();
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(
         null, null, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
   }
@@ -158,7 +121,7 @@ public class ApiResponseEntityExceptionHandler extends ResponseEntityExceptionHa
   public ResponseEntity<Object> handleInternal(
       final BadRequestException ex, final WebRequest request) {
     ex.executeLogging();
-
+    Sentry.captureException(ex);
     return handleExceptionInternal(null, null, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
   }
 }

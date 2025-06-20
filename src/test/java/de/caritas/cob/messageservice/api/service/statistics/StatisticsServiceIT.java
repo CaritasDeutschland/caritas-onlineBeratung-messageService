@@ -1,5 +1,6 @@
 package de.caritas.cob.messageservice.api.service.statistics;
 
+import static de.caritas.cob.messageservice.testhelper.TestConstants.ADVICESEEKER_ID;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.CONSULTANT_ID;
 import static de.caritas.cob.messageservice.testhelper.TestConstants.RC_GROUP_ID;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -18,8 +19,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import org.apache.commons.io.IOUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,14 +27,12 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@RunWith(SpringRunner.class)
 @TestPropertySource(properties = "spring.profiles.active=testing")
 @SpringBootTest(classes = MessageServiceApplication.class)
 @AutoConfigureTestDatabase(replace = Replace.ANY)
-public class StatisticsServiceIT {
+class StatisticsServiceIT {
 
   private static final long MAX_TIMEOUT_MILLIS = 5000;
 
@@ -42,11 +40,11 @@ public class StatisticsServiceIT {
   @Autowired AmqpTemplate amqpTemplate;
 
   @Test
-  public void fireEvent_Should_Send_ExpectedCreateMessageStatisticsEventMessageToQueue()
+  void fireEvent_Should_Send_ExpectedCreateMessageStatisticsEventMessageToQueue()
       throws IOException {
 
     CreateMessageStatisticsEvent createMessageStatisticsEvent =
-        new CreateMessageStatisticsEvent(CONSULTANT_ID, UserRole.CONSULTANT, RC_GROUP_ID, false);
+        new CreateMessageStatisticsEvent(CONSULTANT_ID, UserRole.CONSULTANT, RC_GROUP_ID, false, ADVICESEEKER_ID, 1L);
 
     statisticsService.fireEvent(createMessageStatisticsEvent);
     Message message =
@@ -64,6 +62,12 @@ public class StatisticsServiceIT {
             + "  \"userRole\":\""
             + UserRole.CONSULTANT
             + "\","
+            + "\"receiverId\":\""
+            + ADVICESEEKER_ID
+            + "\","
+            + "\"tenantId\":"
+            + 1L
+            + ","
             + "  \"timestamp\":\""
             + CustomOffsetDateTime.nowInUtc()
             + "\","
