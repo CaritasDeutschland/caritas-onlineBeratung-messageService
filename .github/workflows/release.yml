@@ -13,10 +13,10 @@ jobs:
     steps:
       - name: set env
         run: echo BRANCH=$(echo -n "${GITHUB_REF#refs/heads/}") >> $GITHUB_ENV
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 10
+          node-version: 20
       - run: npm i
       - name: Bump version
         run: |
@@ -24,7 +24,7 @@ jobs:
           git config --local user.name "GitHub Action"
           npm run release
       - name: Push changes
-        uses: ad-m/github-push-action@master
+        uses: ad-m/github-push-action@v1.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{env.BRANCH}}
