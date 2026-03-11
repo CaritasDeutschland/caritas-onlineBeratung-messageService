@@ -31,8 +31,6 @@ jobs:
           java-version: 11
           java-package: jdk
           architecture: x64
-          architecture: x64
-          distribution: temurin
 
       - name: Caching maven dependencies
         uses: actions/cache@v4
