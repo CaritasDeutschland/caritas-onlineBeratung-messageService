@@ -258,12 +258,12 @@ public class MessengerTest {
   }
 
   @Test
-  public void postFeedbackGroupMessage_Should_ReturnCreatedAndSendFeedbackNotification_When_RocketChatServiceSucceeds()
+  public void postFeedbackGroupMessage_Should_ReturnCreatedAndSendFeedbackNotification_When_RocketChatServiceSucceedsAndNotificationIsSetToTrue()
       throws CustomCryptoException {
 
     when(rocketChatService.getGroupInfo(RC_TOKEN, RC_USER_ID, RC_FEEDBACK_GROUP_ID))
         .thenReturn(GET_GROUP_INFO_DTO_FEEDBACK_CHAT);
-    var feedbackGroupMessage = createFeedbackGroupMessage().build();
+    var feedbackGroupMessage = createFeedbackGroupMessage().sendNotification(SEND_NOTIFICATION).build();
     when(rocketChatService.postGroupMessage(feedbackGroupMessage)).thenReturn(
         POST_MESSAGE_RESPONSE_DTO);
 
@@ -271,6 +271,22 @@ public class MessengerTest {
 
     verify(emailNotificationFacade, times(1)).sendEmailAboutNewFeedbackMessage(
         eq(RC_FEEDBACK_GROUP_ID), any(), any());
+  }
+
+  @Test
+  public void postFeedbackGroupMessage_Should_ReturnCreatedAndNotSendFeedbackNotification_When_RocketChatServiceSucceedsAndNotificationIsSetToFalse()
+      throws CustomCryptoException {
+
+    when(rocketChatService.getGroupInfo(RC_TOKEN, RC_USER_ID, RC_FEEDBACK_GROUP_ID))
+        .thenReturn(GET_GROUP_INFO_DTO_FEEDBACK_CHAT);
+    var feedbackGroupMessage = createFeedbackGroupMessage().sendNotification(DONT_SEND_NOTIFICATION).build();
+    when(rocketChatService.postGroupMessage(feedbackGroupMessage)).thenReturn(
+        POST_MESSAGE_RESPONSE_DTO);
+
+    messenger.postFeedbackGroupMessage(feedbackGroupMessage);
+
+    verify(emailNotificationFacade, times(0)).sendEmailAboutNewFeedbackMessage(
+        Mockito.anyString(), any(), anyString());
   }
 
   @Test(expected = BadRequestException.class)
