@@ -19,6 +19,7 @@ import de.caritas.cob.messageservice.api.model.rocket.chat.RocketChatCredentials
 import de.caritas.cob.messageservice.api.model.rocket.chat.StandardResponseDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.group.GetGroupInfoDto;
 import de.caritas.cob.messageservice.api.model.rocket.chat.group.PostGroupAsReadDTO;
+import de.caritas.cob.messageservice.api.model.rocket.chat.group.SetGroupReadOnlyDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.MessagesDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.SendMessageDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.SendMessageResponseDTO;
@@ -74,6 +75,9 @@ public class RocketChatService {
 
   @Value("${rocket.chat.api.get.group.info}")
   private String rcGetGroupInfoUrl;
+
+  @Value("${rocket.chat.api.set.group.read.only}")
+  private String rcSetGroupReadOnlyUrl;
 
   @Value("${rocket.technical.username}")
   private String rcTechnicalUser;
@@ -238,22 +242,85 @@ public class RocketChatService {
 
   /**
    * Posts metadata contained in an {@link AliasMessageDTO} in the given Rocket.Chat group with an
-   * empty message.
+   * optional message string. For message types that may be sent into read-only groups (e.g.
+   * {@link MessageType#CONSULTANT_DISPLAY_NAME_CHANGED}), the group is temporarily set to writable
+   * before posting and restored afterwards.
    *
    * @param rcGroupId       the Rocket.Chat group id
    * @param aliasMessageDTO {@link AliasMessageDTO}
+   * @param messageString   optional message text
    * @return {@link SendMessageResponseDTO}
    */
   public SendMessageResponseDTO postAliasOnlyMessageAsSystemUser(String rcGroupId,
       AliasMessageDTO aliasMessageDTO, String messageString) {
     var systemUser = retrieveSystemUser();
     var alias = JSONHelper.convertAliasMessageDTOToString(aliasMessageDTO).orElse(null);
-    var aliasMessage = createAliasMessage(rcGroupId, systemUser, alias, messageString);
+    var chatMessage = createAliasMessage(rcGroupId, systemUser, alias, messageString);
 
+    boolean wasReadOnly = requiresReadOnlyCheck(aliasMessageDTO) && isGroupReadOnly(systemUser, rcGroupId);
+    if (wasReadOnly) {
+      setGroupReadOnly(systemUser, rcGroupId, false);
+    }
     try {
-      return postGroupMessage(aliasMessage, false);
+      return postGroupMessage(chatMessage, false);
     } catch (CustomCryptoException e) {
       throw new InternalServerErrorException(e, LogService::logInternalServerError);
+    } finally {
+      if (wasReadOnly) {
+        setGroupReadOnly(systemUser, rcGroupId, true);
+      }
+    }
+  }
+
+  private boolean requiresReadOnlyCheck(AliasMessageDTO aliasMessageDTO) {
+    return MessageType.CONSULTANT_DISPLAY_NAME_CHANGED.equals(aliasMessageDTO.getMessageType());
+  }
+
+  /**
+   * Checks whether the given Rocket.Chat group is currently set to read-only.
+   *
+   * @param systemUser the system user credentials
+   * @param rcGroupId  the Rocket.Chat group id
+   * @return {@code true} if the group is read-only
+   */
+  private boolean isGroupReadOnly(RocketChatCredentials systemUser, String rcGroupId) {
+    try {
+      var groupInfo = getGroupInfo(
+          systemUser.getRocketChatToken(),
+          systemUser.getRocketChatUserId(),
+          rcGroupId);
+      return nonNull(groupInfo)
+          && nonNull(groupInfo.getGroup())
+          && groupInfo.getGroup().isReadOnly();
+    } catch (Exception ex) {
+      log.warn("Could not determine read-only status for group {}, assuming writable.", rcGroupId,
+          ex);
+      return false;
+    }
+  }
+
+  /**
+   * Sets the read-only flag for the given Rocket.Chat group.
+   *
+   * @param systemUser the system user credentials
+   * @param rcGroupId  the Rocket.Chat group id
+   * @param readOnly   {@code true} to set the group read-only, {@code false} to make it writable
+   */
+  private void setGroupReadOnly(RocketChatCredentials systemUser, String rcGroupId,
+      boolean readOnly) {
+    var headers = getRocketChatHeader(systemUser.getRocketChatToken(),
+        systemUser.getRocketChatUserId());
+    var body = new SetGroupReadOnlyDTO(rcGroupId, readOnly);
+    var request = new HttpEntity<>(body, headers);
+
+    var response = restTemplate.exchange(rcSetGroupReadOnlyUrl, HttpMethod.POST, request,
+        StandardResponseDTO.class);
+
+    var responseBody = response.getBody();
+    if (nonNull(responseBody) && !responseBody.isSuccess()) {
+      log.error(
+          "Rocket.Chat Error: Set group {} readOnly={} failed with reason: {}",
+          rcGroupId, readOnly, responseBody.getError());
     }
   }
 

@@ -1,6 +1,6 @@
 /target/
-!.mvn/wrapper/maven-wrapper.jar
 /node_modules
+log
 
 ### STS ###
 .apt_generated
@@ -24,5 +24,4 @@
 /dist/
 /nbdist/
 /.nb-gradle/
-wrapper
-log
+

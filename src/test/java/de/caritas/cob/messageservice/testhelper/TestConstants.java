@@ -89,10 +89,10 @@ public class TestConstants {
   /*
    * Groups
    */
-  public static final GroupDto GROUP_DTO = new GroupDto(RC_GROUP_ID, RC_GROUP_NAME);
+  public static final GroupDto GROUP_DTO = new GroupDto(RC_GROUP_ID, RC_GROUP_NAME, false);
   public static final GetGroupInfoDto GET_GROUP_INFO_DTO = new GetGroupInfoDto(GROUP_DTO, true);
   public static final GroupDto GROUP_DTO_FEEDBACK_CHAT =
-      new GroupDto(RC_FEEDBACK_GROUP_ID, RC_FEEDBACK_GROUP_NAME);
+      new GroupDto(RC_FEEDBACK_GROUP_ID, RC_FEEDBACK_GROUP_NAME, false);
   public static final GetGroupInfoDto GET_GROUP_INFO_DTO_FEEDBACK_CHAT =
       new GetGroupInfoDto(GROUP_DTO_FEEDBACK_CHAT, true);
 

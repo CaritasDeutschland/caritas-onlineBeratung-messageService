@@ -35,10 +35,13 @@ import de.caritas.cob.messageservice.api.model.MessageType;
 import de.caritas.cob.messageservice.api.model.VideoCallMessageDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.RocketChatCredentials;
 import de.caritas.cob.messageservice.api.model.rocket.chat.StandardResponseDTO;
+import de.caritas.cob.messageservice.api.model.rocket.chat.group.GetGroupInfoDto;
+import de.caritas.cob.messageservice.api.model.rocket.chat.group.GroupDto;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.MessagesDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.SendMessageResponseDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.SendMessageResultDTO;
 import de.caritas.cob.messageservice.api.service.helper.RocketChatCredentialsHelper;
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -108,6 +111,7 @@ public class RocketChatServiceTest {
     Whitebox.setInternalState(rocketChatService, "rcSendMessageUrl", "http://localhost/api/v1/chat.sendMessage");
     Whitebox.setInternalState(rocketChatService, "rcPostGroupMessagesRead", FIELD_VALUE_RC_POST_GROUP_MESSAGES_READ);
     Whitebox.setInternalState(rocketChatService, FIELD_NAME_RC_GET_GROUP_INFO_URL, FIELD_VALUE_RC_GET_GROUP_INFO_URL);
+    Whitebox.setInternalState(rocketChatService, "rcSetGroupReadOnlyUrl", "http://localhost/api/v1/groups.setReadOnly");
     setInternalState(LogService.class, "LOGGER", logger);
   }
 
@@ -408,9 +412,10 @@ public class RocketChatServiceTest {
     AliasMessageDTO aliasMessageDTO =
         new AliasMessageDTO().videoCallMessageDTO(new VideoCallMessageDTO());
 
-    this.rocketChatService.postAliasOnlyMessageAsSystemUser("rcGroupId", aliasMessageDTO);
+    this.rocketChatService.postAliasOnlyMessageAsSystemUser("rcGroupId", aliasMessageDTO, null);
 
-    verify(this.restTemplate, times(1)).postForObject(anyString(), any(HttpEntity.class), any());
+    verify(this.restTemplate, times(1)).postForObject(
+        eq("http://localhost/api/v1/chat.sendMessage"), any(HttpEntity.class), any());
   }
 
   @Test(expected = InternalServerErrorException.class)
@@ -424,6 +429,69 @@ public class RocketChatServiceTest {
     when(encryptionService.encrypt(anyString(), anyString()))
         .thenThrow(new CustomCryptoException(new Exception()));
 
-    this.rocketChatService.postAliasOnlyMessageAsSystemUser(RC_GROUP_ID, aliasMessageDTO);
+    this.rocketChatService.postAliasOnlyMessageAsSystemUser(RC_GROUP_ID, aliasMessageDTO, null);
+  }
+
+  @Test
+  public void postAliasOnlyMessageAsSystemUser_Should_notCheckReadOnly_When_messageTypeIsNotDisplayNameChanged()
+      throws RocketChatUserNotInitializedException {
+    when(rcCredentialsHelper.getSystemUser()).thenReturn(RCC_SYSTEM_USER);
+    var aliasMessageDTO = new AliasMessageDTO().messageType(MessageType.FURTHER_STEPS);
+
+    rocketChatService.postAliasOnlyMessageAsSystemUser(RC_GROUP_ID, aliasMessageDTO, null);
+
+    verify(restTemplate, times(0)).exchange(
+        eq("http://localhost/api/v1/groups.setReadOnly"),
+        eq(HttpMethod.POST), any(), eq(StandardResponseDTO.class));
+  }
+
+  @Test
+  public void postAliasOnlyMessageAsSystemUser_Should_temporarilyDisableReadOnly_When_roomIsReadOnlyAndTypeIsDisplayNameChanged()
+      throws RocketChatUserNotInitializedException {
+    when(rcCredentialsHelper.getSystemUser()).thenReturn(RCC_SYSTEM_USER);
+
+    var readOnlyGroup = new GroupDto();
+    readOnlyGroup.setReadOnly(true);
+    var groupInfoDto = new GetGroupInfoDto();
+    groupInfoDto.setGroup(readOnlyGroup);
+    groupInfoDto.setSuccess(true);
+    when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(GetGroupInfoDto.class)))
+        .thenReturn(ResponseEntity.ok(groupInfoDto));
+
+    var successResponse = new StandardResponseDTO(true, null);
+    when(restTemplate.exchange(
+        eq("http://localhost/api/v1/groups.setReadOnly"),
+        eq(HttpMethod.POST), any(), eq(StandardResponseDTO.class)))
+        .thenReturn(ResponseEntity.ok(successResponse));
+
+    var aliasMessageDTO = new AliasMessageDTO().messageType(MessageType.CONSULTANT_DISPLAY_NAME_CHANGED);
+
+    rocketChatService.postAliasOnlyMessageAsSystemUser(RC_GROUP_ID, aliasMessageDTO, null);
+
+    verify(restTemplate, times(2)).exchange(
+        eq("http://localhost/api/v1/groups.setReadOnly"),
+        eq(HttpMethod.POST), any(), eq(StandardResponseDTO.class));
+  }
+
+  @Test
+  public void postAliasOnlyMessageAsSystemUser_Should_notSetReadOnly_When_roomIsNotReadOnlyAndTypeIsDisplayNameChanged()
+      throws RocketChatUserNotInitializedException {
+    when(rcCredentialsHelper.getSystemUser()).thenReturn(RCC_SYSTEM_USER);
+
+    var writableGroup = new GroupDto();
+    writableGroup.setReadOnly(false);
+    var groupInfoDto = new GetGroupInfoDto();
+    groupInfoDto.setGroup(writableGroup);
+    groupInfoDto.setSuccess(true);
+    when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(GetGroupInfoDto.class)))
+        .thenReturn(ResponseEntity.ok(groupInfoDto));
+
+    var aliasMessageDTO = new AliasMessageDTO().messageType(MessageType.CONSULTANT_DISPLAY_NAME_CHANGED);
+
+    rocketChatService.postAliasOnlyMessageAsSystemUser(RC_GROUP_ID, aliasMessageDTO, null);
+
+    verify(restTemplate, times(0)).exchange(
+        eq("http://localhost/api/v1/groups.setReadOnly"),
+        eq(HttpMethod.POST), any(), eq(StandardResponseDTO.class));
   }
 }

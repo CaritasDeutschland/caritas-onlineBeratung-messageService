@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.endsWith;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -47,6 +48,7 @@ import de.caritas.cob.messageservice.api.model.VideoCallMessageDTO;
 import de.caritas.cob.messageservice.api.model.VideoCallMessageDTO.EventTypeEnum;
 import de.caritas.cob.messageservice.api.model.draftmessage.entity.DraftMessage;
 import de.caritas.cob.messageservice.api.model.rocket.chat.RocketChatCredentials;
+import de.caritas.cob.messageservice.api.model.rocket.chat.StandardResponseDTO;
 import de.caritas.cob.messageservice.api.model.rocket.chat.group.GetGroupInfoDto;
 import de.caritas.cob.messageservice.api.model.rocket.chat.group.GroupDto;
 import de.caritas.cob.messageservice.api.model.rocket.chat.message.MessagesDTO;
@@ -1534,6 +1536,92 @@ class MessageControllerE2EIT {
     forwardMessage.setRcUserId(RC_USER_ID);
     forwardMessage.setDisplayName("hk");
     return forwardMessage;
+  }
+
+  private void givenAReadOnlyGroupInfoResponse() {
+    var groupDto = new GroupDto();
+    groupDto.setReadOnly(true);
+    var getGroupInfoDto = new GetGroupInfoDto();
+    getGroupInfoDto.setGroup(groupDto);
+    getGroupInfoDto.setSuccess(true);
+    when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(),
+        eq(GetGroupInfoDto.class))).thenReturn(ResponseEntity.ok(getGroupInfoDto));
+  }
+
+  private void givenAWritableGroupInfoResponse() {
+    var groupDto = new GroupDto();
+    groupDto.setReadOnly(false);
+    var getGroupInfoDto = new GetGroupInfoDto();
+    getGroupInfoDto.setGroup(groupDto);
+    getGroupInfoDto.setSuccess(true);
+    when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(),
+        eq(GetGroupInfoDto.class))).thenReturn(ResponseEntity.ok(getGroupInfoDto));
+  }
+
+  private void givenSuccessfulSetReadOnlyResponse() {
+    when(restTemplate.exchange(
+        endsWith("/groups.setReadOnly"), eq(HttpMethod.POST), any(),
+        eq(StandardResponseDTO.class)))
+        .thenReturn(ResponseEntity.ok(new StandardResponseDTO(true, null)));
+  }
+
+  @Test
+  @WithMockUser(authorities = AuthorityValue.CONSULTANT_DEFAULT)
+  void saveAliasOnlyMessageShouldTemporarilyDisableReadOnly_When_roomIsReadOnlyAndTypeIsDisplayNameChanged()
+      throws Exception {
+    givenAuthenticatedUser();
+    givenRocketChatSystemUser();
+    givenAReadOnlyGroupInfoResponse();
+    givenSuccessfulSetReadOnlyResponse();
+    givenSuccessfulSendMessageResponse(null, RC_GROUP_ID);
+    givenAMasterKey();
+
+    var aliasMessage = new AliasOnlyMessageDTO();
+    aliasMessage.setMessageType(MessageType.CONSULTANT_DISPLAY_NAME_CHANGED);
+
+    mockMvc.perform(
+            post("/messages/aliasonly/new")
+                .cookie(CSRF_COOKIE)
+                .header(CSRF_HEADER, CSRF_VALUE)
+                .header("rcGroupId", RC_GROUP_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(aliasMessage))
+                .accept(MediaType.APPLICATION_JSON)
+        )
+        .andExpect(status().isCreated());
+
+    verify(restTemplate, times(2)).exchange(
+        endsWith("/groups.setReadOnly"), eq(HttpMethod.POST), any(),
+        eq(StandardResponseDTO.class));
+  }
+
+  @Test
+  @WithMockUser(authorities = AuthorityValue.CONSULTANT_DEFAULT)
+  void saveAliasOnlyMessageShouldNotSetReadOnly_When_roomIsWritableAndTypeIsDisplayNameChanged()
+      throws Exception {
+    givenAuthenticatedUser();
+    givenRocketChatSystemUser();
+    givenAWritableGroupInfoResponse();
+    givenSuccessfulSendMessageResponse(null, RC_GROUP_ID);
+    givenAMasterKey();
+
+    var aliasMessage = new AliasOnlyMessageDTO();
+    aliasMessage.setMessageType(MessageType.CONSULTANT_DISPLAY_NAME_CHANGED);
+
+    mockMvc.perform(
+            post("/messages/aliasonly/new")
+                .cookie(CSRF_COOKIE)
+                .header(CSRF_HEADER, CSRF_VALUE)
+                .header("rcGroupId", RC_GROUP_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(aliasMessage))
+                .accept(MediaType.APPLICATION_JSON)
+        )
+        .andExpect(status().isCreated());
+
+    verify(restTemplate, never()).exchange(
+        endsWith("/groups.setReadOnly"), eq(HttpMethod.POST), any(),
+        eq(StandardResponseDTO.class));
   }
 
   private void assertGroupCall() {

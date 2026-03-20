@@ -22,4 +22,8 @@ public class GroupDto {
   @JsonProperty("_id")
   private String roomId;
   private String name;
+
+  /** {@code true} if the group is currently set to read-only in Rocket.Chat. */
+  @JsonProperty("ro")
+  private boolean readOnly;
 }
