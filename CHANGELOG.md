@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 2.5.2 (2026-06-15)
+
 ### 2.5.1 (2026-03-11)
 
 ## [2.5.0](https://github.com/CaritasDeutschland/caritas-onlineBeratung-messageService/compare/v2.4.0...v2.5.0) (2021-12-14)
